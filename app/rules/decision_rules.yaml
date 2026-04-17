@@ -1,0 +1,67 @@
+rules:
+  # ── rule 1 ──────────────────────────────────────────────────────────────────
+  # route=auto, action=escalate の意味:
+  #   "auto" は「人間ではなく自動システムが受け取る」ことを意味する。
+  #   "escalate" は「上位キューまたは上位処理システムへ自動転送する」ことを意味する。
+  #   つまり route=auto / action=escalate は「人間レビューなし・自動で上位処理に送る」であり、
+  #   route=human / action=assign_queue（人間レビューキューへ割り当て）とは区別される。
+  - name: critical_risk_escalate
+    reason: >-
+      High-risk flags detected (system_error, critical, or security).
+      Automatically forwarded to an upstream high-priority queue — no human agent assigned.
+    condition:
+      risk_flags_any: ["system_error", "critical", "security"]
+    route: auto
+    action: escalate
+    decision_state: completed
+    base_confidence: 0.95
+
+  # ── rule 2 ──────────────────────────────────────────────────────────────────
+  - name: high_urgency_auto_reply
+    reason: >-
+      Signal urgency is at or above 0.70. An automated reply is dispatched immediately.
+    condition:
+      urgency_gte: 0.70
+    route: auto
+    action: reply
+    decision_state: completed
+    base_confidence: 0.85
+
+  # ── rule 3 ──────────────────────────────────────────────────────────────────
+  - name: complaint_or_legal_human
+    reason: >-
+      Risk flags indicate that human judgment is required (complaint, legal, or PII detected).
+      Placed in the human review queue.
+    condition:
+      risk_flags_any: ["complaint", "legal", "pii"]
+    route: human
+    action: assign_queue
+    decision_state: requires_human
+    base_confidence: 0.80
+
+  # ── rule 4 ──────────────────────────────────────────────────────────────────
+  # confidence の2値に注意:
+  #   condition.confidence_lt (0.35) = signal confidence の閾値（入力シグナルの信頼度）
+  #   base_confidence (0.55)         = decision confidence（「hold が正しい」という決定への確信度）
+  #   この2つは別の値であり、低い signal confidence を検出したからこそ hold を選んでいる。
+  - name: low_confidence_hold
+    reason: >-
+      Signal confidence is below the threshold (< 0.35), indicating insufficient context.
+      Inquiry held without action until additional information is available.
+    condition:
+      confidence_lt: 0.35
+    route: hold
+    action: none
+    decision_state: waiting
+    base_confidence: 0.55  # confidence in the hold decision itself, not the signal confidence
+
+  # ── rule 5 ──────────────────────────────────────────────────────────────────
+  - name: default_auto_reply
+    reason: >-
+      No high-risk flags detected and confidence is above the default threshold.
+      An automated reply is dispatched.
+    condition: {}
+    route: auto
+    action: reply
+    decision_state: completed
+    base_confidence: 0.70

@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{{ title }}</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #f0f2f5;
+      color: #1a1a2e;
+      min-height: 100vh;
+      padding: 2rem 1rem;
+    }
+
+    header { text-align: center; margin-bottom: 2rem; }
+    header h1 { font-size: 1.5rem; font-weight: 700; letter-spacing: -0.5px; }
+    header p  { color: #666; font-size: 0.85rem; margin-top: 0.3rem; }
+
+    .layout {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.5rem;
+      max-width: 940px;
+      margin: 0 auto;
+    }
+    @media (max-width: 640px) { .layout { grid-template-columns: 1fr; } }
+
+    .card {
+      background: #fff;
+      border-radius: 12px;
+      padding: 1.5rem;
+      box-shadow: 0 2px 12px rgba(0,0,0,.08);
+    }
+    .card h2 {
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: #888;
+      margin-bottom: 1.2rem;
+    }
+
+    label { display: block; font-size: 0.88rem; font-weight: 600; margin-bottom: 0.3rem; }
+
+    textarea, select {
+      width: 100%;
+      padding: 0.6rem 0.75rem;
+      border: 1.5px solid #ddd;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      font-family: inherit;
+      margin-bottom: 1rem;
+      transition: border-color .2s;
+      background: #fafafa;
+    }
+    textarea:focus, select:focus { outline: none; border-color: #6c63ff; background: #fff; }
+    textarea { resize: vertical; min-height: 110px; }
+
+    .slider-row { margin-bottom: 1rem; }
+    .slider-row input[type=range] { width: 100%; accent-color: #6c63ff; }
+    .slider-label { display: flex; justify-content: space-between; font-size: 0.78rem; color: #aaa; margin-top: 0.2rem; }
+    .slider-value { font-weight: 700; color: #6c63ff; font-size: 1rem; text-align: center; margin-bottom: 0.4rem; }
+
+    .flags-group { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 1.2rem; }
+    .flag-chip {
+      display: flex; align-items: center; gap: 0.3rem;
+      background: #f3f0ff; border: 1.5px solid #d4caff;
+      border-radius: 20px; padding: 0.2rem 0.65rem;
+      font-size: 0.8rem; cursor: pointer; user-select: none;
+      transition: background .15s, border-color .15s;
+    }
+    .flag-chip input[type=checkbox] { accent-color: #6c63ff; width: 13px; height: 13px; }
+    .flag-chip:has(input:checked) { background: #6c63ff; border-color: #6c63ff; color: #fff; }
+
+    button[type=submit] {
+      width: 100%;
+      padding: 0.75rem;
+      background: #6c63ff;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background .2s, transform .1s;
+    }
+    button[type=submit]:hover   { background: #574fd6; }
+    button[type=submit]:active  { transform: scale(.98); }
+    button[type=submit]:disabled { background: #aaa; cursor: not-allowed; }
+
+    /* ── Result panel ── */
+    #result-card { display: none; }
+    #result-card.visible { display: block; }
+
+    /* route badges */
+    .badge {
+      display: inline-block;
+      padding: 0.28rem 0.85rem;
+      border-radius: 20px;
+      font-size: 0.78rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 1rem;
+    }
+    .badge-auto  { background: #d4edda; color: #155724; }
+    .badge-human { background: #fff3cd; color: #856404; }
+    .badge-hold  { background: #d1ecf1; color: #0c5460; }
+
+    /* action badge */
+    .action-badge {
+      display: inline-block;
+      padding: 0.2rem 0.65rem;
+      border-radius: 6px;
+      font-size: 0.78rem;
+      font-weight: 600;
+      background: #e9ecef;
+      color: #495057;
+    }
+
+    /* decision_state badge */
+    .state-completed     { background: #d4edda; color: #155724; }
+    .state-requires_human{ background: #fff3cd; color: #856404; }
+    .state-waiting       { background: #d1ecf1; color: #0c5460; }
+
+    .result-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.75rem 1.2rem;
+      font-size: 0.88rem;
+    }
+    .result-item { border-bottom: 1px solid #f0f0f0; padding-bottom: 0.5rem; }
+    .result-item .key   { color: #999; font-size: 0.72rem; text-transform: uppercase; margin-bottom: 0.15rem; }
+    .result-item .value { font-weight: 600; word-break: break-all; }
+
+    .full-row { grid-column: 1 / -1; }
+
+    .risk-pills { display: flex; flex-wrap: wrap; gap: 0.35rem; margin-top: 0.3rem; }
+    .risk-pill {
+      background: #ffe9e9; color: #c0392b;
+      border-radius: 4px; padding: 0.15rem 0.5rem;
+      font-size: 0.75rem; font-weight: 600;
+    }
+    .risk-pill.none { background: #eee; color: #888; }
+
+    .bar-wrap { margin-top: 0.5rem; }
+    .bar-bg   { background: #eee; border-radius: 6px; height: 8px; overflow: hidden; }
+    .bar-fill {
+      height: 100%;
+      border-radius: 6px;
+      background: linear-gradient(90deg, #6c63ff, #a29bfe);
+      transition: width .6s ease;
+    }
+
+    .mono { font-size: .72rem; font-family: monospace; color: #666; }
+
+    .error-msg {
+      background: #fdecea; color: #c0392b;
+      border-radius: 8px; padding: 0.75rem 1rem; font-size: 0.88rem;
+    }
+
+    .spinner {
+      display: inline-block;
+      width: 16px; height: 16px;
+      border: 2px solid #fff;
+      border-top-color: transparent;
+      border-radius: 50%;
+      animation: spin .7s linear infinite;
+      vertical-align: middle;
+      margin-right: 6px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>{{ title }}</h1>
+    <p>Local fallback decision pipeline — urgency / confidence / risk_flags</p>
+  </header>
+
+  <div class="layout">
+
+    <!-- ── Input ── -->
+    <div class="card">
+      <h2>Input</h2>
+      <form id="inquiry-form">
+
+        <label for="text">Inquiry text</label>
+        <textarea id="text" name="text"
+          placeholder="例: サービスに緊急障害が発生しています。至急対応をお願いします。"
+          required></textarea>
+
+        <label for="category">Category</label>
+        <select id="category" name="category">
+          <option value="">— none —</option>
+          <option value="technical">Technical</option>
+          <option value="billing">Billing</option>
+          <option value="complaint">Complaint</option>
+          <option value="general">General</option>
+        </select>
+
+        <div class="slider-row">
+          <label>Priority <span style="font-weight:400;color:#aaa">(0–10, used to derive urgency)</span></label>
+          <div class="slider-value" id="priority-display">5</div>
+          <input type="range" id="priority" min="0" max="10" value="5" />
+          <div class="slider-label"><span>0 low</span><span>10 high</span></div>
+        </div>
+
+        <label>Risk flags <span style="font-weight:400;color:#aaa">(optional explicit hints)</span></label>
+        <div class="flags-group">
+          <label class="flag-chip"><input type="checkbox" name="risk_flag" value="complaint">complaint</label>
+          <label class="flag-chip"><input type="checkbox" name="risk_flag" value="legal">legal</label>
+          <label class="flag-chip"><input type="checkbox" name="risk_flag" value="pii">pii</label>
+          <label class="flag-chip"><input type="checkbox" name="risk_flag" value="system_error">system_error</label>
+          <label class="flag-chip"><input type="checkbox" name="risk_flag" value="critical">critical</label>
+          <label class="flag-chip"><input type="checkbox" name="risk_flag" value="security">security</label>
+        </div>
+
+        <button type="submit" id="submit-btn">Run Decision</button>
+      </form>
+    </div>
+
+    <!-- ── Result ── -->
+    <div class="card" id="result-card">
+      <h2>Result</h2>
+      <div id="result-body"></div>
+    </div>
+
+  </div>
+
+  <script>
+    // priority slider display
+    const priorityInput   = document.getElementById('priority');
+    const priorityDisplay = document.getElementById('priority-display');
+    priorityInput.addEventListener('input', () => {
+      priorityDisplay.textContent = priorityInput.value;
+    });
+
+    const form       = document.getElementById('inquiry-form');
+    const submitBtn  = document.getElementById('submit-btn');
+    const resultCard = document.getElementById('result-card');
+    const resultBody = document.getElementById('result-body');
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      submitBtn.disabled = true;
+      submitBtn.innerHTML = '<span class="spinner"></span>Running…';
+      resultCard.classList.remove('visible');
+
+      const checkedFlags = [...document.querySelectorAll('input[name="risk_flag"]:checked')]
+        .map(el => el.value);
+
+      const payload = {
+        id:         crypto.randomUUID(),
+        text:       document.getElementById('text').value,
+        category:   document.getElementById('category').value || null,
+        priority:   parseInt(priorityInput.value, 10),
+        risk_flags: checkedFlags,
+      };
+
+      try {
+        const res  = await fetch('/api/decision/run', {
+          method:  'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body:    JSON.stringify(payload),
+        });
+        const data = await res.json();
+
+        if (!res.ok) {
+          resultBody.innerHTML = `<div class="error-msg">Error ${res.status}: ${data.detail ?? JSON.stringify(data)}</div>`;
+        } else {
+          resultBody.innerHTML = renderResult(data);
+          requestAnimationFrame(() => {
+            const bar = document.getElementById('conf-bar');
+            if (bar) bar.style.width = (data.confidence * 100) + '%';
+          });
+        }
+      } catch (err) {
+        resultBody.innerHTML = `<div class="error-msg">Network error: ${err.message}</div>`;
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Run Decision';
+        resultCard.classList.add('visible');
+      }
+    });
+
+    function renderResult(d) {
+      const routeBadgeClass = { auto: 'badge-auto', human: 'badge-human', hold: 'badge-hold' }[d.route] ?? '';
+      const stateClass = { completed: 'state-completed', requires_human: 'state-requires_human', waiting: 'state-waiting' }[d.decision_state] ?? '';
+      const pct = Math.round(d.confidence * 100);
+
+      const flagsHtml = d.risk_flags && d.risk_flags.length
+        ? d.risk_flags.map(f => `<span class="risk-pill">${f}</span>`).join('')
+        : '<span class="risk-pill none">none</span>';
+
+      return `
+        <span class="badge ${routeBadgeClass}">route: ${d.route}</span>
+        <div class="result-grid">
+          <div class="result-item">
+            <div class="key">Action</div>
+            <div class="value"><span class="action-badge">${d.action}</span></div>
+          </div>
+          <div class="result-item">
+            <div class="key">Decision State</div>
+            <div class="value"><span class="badge ${stateClass}" style="margin:0;font-size:.78rem">${d.decision_state}</span></div>
+          </div>
+          <div class="result-item">
+            <div class="key">Applied Rule</div>
+            <div class="value mono">${d.applied_rule}</div>
+          </div>
+          <div class="result-item">
+            <div class="key">Confidence</div>
+            <div class="value">${pct}%</div>
+          </div>
+          <div class="result-item full-row">
+            <div class="key">Reason</div>
+            <div class="value">${d.reason}</div>
+          </div>
+          <div class="result-item full-row">
+            <div class="key">Risk Flags</div>
+            <div class="risk-pills">${flagsHtml}</div>
+          </div>
+          <div class="result-item full-row bar-wrap">
+            <div class="key">Confidence</div>
+            <div class="bar-bg"><div class="bar-fill" id="conf-bar" style="width:0"></div></div>
+          </div>
+          <div class="result-item full-row">
+            <div class="key">Signal ID</div>
+            <div class="value mono">${d.signal_id}</div>
+          </div>
+          <div class="result-item full-row">
+            <div class="key">Trace ID</div>
+            <div class="value mono">${d.trace_id}</div>
+          </div>
+        </div>`;
+    }
+  </script>
+</body>
+</html>
