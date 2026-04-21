@@ -474,3 +474,8 @@ traces/
 | Rules | PyYAML | 6.0 |
 | Config | pydantic-settings | 2.4 |
 | Runtime | Python | 3.11 |
+
+## Learn More
+
+- Light DTM Starter Kit  
+  https://deus-ex-machina-ism.com/en/light-dtm-minimum-decision-ai-starter-kit/
