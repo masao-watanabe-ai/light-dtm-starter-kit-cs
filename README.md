@@ -479,3 +479,7 @@ traces/
 
 - Light DTM Starter Kit  
   https://deus-ex-machina-ism.com/en/light-dtm-minimum-decision-ai-starter-kit/
+
+## License
+
+MIT License © 2026 Masao Watanabe
